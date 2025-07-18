@@ -2,22 +2,30 @@
 const Task = require('../models/tasks');
 
 exports.getAll = async (req, res, next) => {
-    try {
+  try {
 
-        const data = await Task.find();
+    const data = await Task.find();
+    const pending = await Task.countDocuments({status: "Pending"});
+    const progress = await Task.countDocuments({status: "In Progress"});
+    const completed = await Task.countDocuments({status: "Completed"});
 
-        return res.status(200).json({
-            data: data,
-            message: "Tasks fetched successfully",
-        });
-    } catch (err) {
-        console.log(err);
-        if (!err.statusCode) {
-            err.statusCode = 500;
-            err.message = "Something went wrong on database operation!";
-        }
-        next(err);
+    return res.status(200).json({
+      data: data,
+      summary: {
+        pending: pending || 0,
+        progress: progress || 0,
+        completed: completed || 0
+      },
+      message: "Tasks fetched successfully",
+    });
+  } catch (err) {
+    console.log(err);
+    if (!err.statusCode) {
+      err.statusCode = 500;
+      err.message = "Something went wrong on database operation!";
     }
+    next(err);
+  }
 };
 
 exports.getById = async (req, res, next) => {
@@ -44,7 +52,6 @@ exports.getById = async (req, res, next) => {
 exports.addTask = async (req, res, next) => {
   try {
     const taskData = req.body;
-
     const newTask = new Task(taskData);
     const savedTask = await newTask.save();
 
